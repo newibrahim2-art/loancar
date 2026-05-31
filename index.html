@@ -6,7 +6,6 @@
     <title>حاسبة التمويل الشاملة - Dark Premium</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     <style>
-        /* [تم الاحتفاظ بنفس الستايل الأصلي كما هو تماماً] */
         :root { --bg-main: #0B1120; --bg-card: #1E293B; --bg-input: #0F172A; --accent-glow: #38BDF8; --text-primary: #F8FAFC; --text-secondary: #94A3B8; --border-color: #334155; --success-color: #10B981; --warning-color: #F59E0B; --danger-color: #EF4444; --purple-glow: #C084FC; }
         * { box-sizing: border-box; font-family: 'Cairo', sans-serif; }
         body { margin: 0; background-color: var(--bg-main); color: var(--text-primary); padding-bottom: 20px; background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, transparent 70%); }
@@ -73,7 +72,10 @@
                 </div>
                 <div class="control-group">
                     <label>الدفعة المقدمة</label>
-                    <div class="exact-inputs"><div class="input-wrapper"><input type="number" id="dpAmountNum" value="200000"><span>ج.م</span></div><div class="input-wrapper" style="flex: 0.4;"><input type="number" id="dpPercentNum" value="25" max="100"><span>%</span></div></div>
+                    <div class="exact-inputs">
+                        <div class="input-wrapper"><input type="number" id="dpAmountNum" value="200000"><span>ج.م</span></div>
+                        <div class="input-wrapper" style="flex: 0.4;"><input type="number" id="dpPercentNum" value="25" max="100"><span>%</span></div>
+                    </div>
                     <input type="range" id="dpSlider" min="0" max="800000" step="500" value="200000">
                 </div>
             </div>
@@ -92,50 +94,27 @@
         </div>
         <div class="footer-brand" dir="ltr">Powered by <span>ibrahim hassanen</span></div>
     </div>
+
     <script>
-        async function updateAllCalculations() {
-            const data = {
-                price: parseFloat(document.getElementById('priceNum').value),
-                dp: parseFloat(document.getElementById('dpAmountNum').value),
-                rates: {
-                    3: parseFloat(document.getElementById('rate3').value),
-                    5: parseFloat(document.getElementById('rate5').value),
-                    7: parseFloat(document.getElementById('rate7').value),
-                    Custom: parseFloat(document.getElementById('rateCustom').value)
-                },
-                customYears: parseFloat(document.getElementById('customYears').value)
-            };
+        const priceNum = document.getElementById('priceNum'), priceSlider = document.getElementById('priceSlider'), dpAmountNum = document.getElementById('dpAmountNum'), dpPercentNum = document.getElementById('dpPercentNum'), dpSlider = document.getElementById('dpSlider');
+
+        async function fetchCalculations() {
+            const data = { price: parseFloat(priceNum.value)||0, dp: parseFloat(dpAmountNum.value)||0, rates: { 3: parseFloat(document.getElementById('rate3').value)||0, 5: parseFloat(document.getElementById('rate5').value)||0, 7: parseFloat(document.getElementById('rate7').value)||0, Custom: parseFloat(document.getElementById('rateCustom').value)||0 }, customYears: parseFloat(document.getElementById('customYears').value)||0 };
             try {
-                const response = await fetch('/.netlify/functions/calculateLoan', {
-                    method: 'POST',
-                    body: JSON.stringify(data)
-                });
-                const result = await response.json();
-                document.getElementById('summaryPrice').innerText = result.price;
-                document.getElementById('summaryDP').innerText = result.dp;
-                document.getElementById('summaryRemaining').innerText = result.remaining;
-                ['3','5','7','Custom'].forEach(id => {
-                    document.getElementById('fin'+id).innerText = result[id].fin;
-                    document.getElementById('int'+id).innerText = result[id].int;
-                    document.getElementById('mInt'+id).innerText = result[id].mInt;
-                    document.getElementById('tot'+id).innerText = result[id].tot;
-                    document.getElementById('res'+id).innerText = result[id].res;
-                });
+                const response = await fetch('/.netlify/functions/calculateLoan', { method: 'POST', body: JSON.stringify(data) });
+                const r = await response.json();
+                document.getElementById('summaryPrice').innerText = r.price; document.getElementById('summaryDP').innerText = r.dp; document.getElementById('summaryRemaining').innerText = r.remaining;
+                ['3','5','7','Custom'].forEach(id => { document.getElementById('fin'+id).innerText = r[id].fin; document.getElementById('int'+id).innerText = r[id].int; document.getElementById('mInt'+id).innerText = r[id].mInt; document.getElementById('tot'+id).innerText = r[id].tot; document.getElementById('res'+id).innerText = r[id].res; });
             } catch (e) { console.error(e); }
         }
-        // [ربط الأحداث كما في الكود الأصلي]
-        const priceNum = document.getElementById('priceNum');
-        priceNum.addEventListener('input', () => { 
-            document.getElementById('priceSlider').value = priceNum.value;
-            document.getElementById('dpSlider').max = priceNum.value;
-            updateAllCalculations(); 
-        });
-        document.getElementById('priceSlider').addEventListener('input', (e) => { priceNum.value = e.target.value; priceNum.dispatchEvent(new Event('input')); });
-        document.getElementById('dpAmountNum').addEventListener('input', updateAllCalculations);
-        document.getElementById('dpPercentNum').addEventListener('input', updateAllCalculations);
-        document.getElementById('dpSlider').addEventListener('input', (e) => { document.getElementById('dpAmountNum').value = e.target.value; updateAllCalculations(); });
-        ['rate3','rate5','rate7','rateCustom','customYears'].forEach(id => document.getElementById(id).addEventListener('input', updateAllCalculations));
-        updateAllCalculations();
+
+        priceNum.addEventListener('input', () => { priceSlider.value = priceNum.value; dpSlider.max = priceNum.value; dpPercentNum.value = (priceNum.value > 0) ? ((dpAmountNum.value / priceNum.value) * 100).toFixed(1) : 0; fetchCalculations(); });
+        priceSlider.addEventListener('input', () => { priceNum.value = priceSlider.value; priceNum.dispatchEvent(new Event('input')); });
+        dpAmountNum.addEventListener('input', () => { dpSlider.value = dpAmountNum.value; dpPercentNum.value = (priceNum.value > 0) ? ((dpAmountNum.value / priceNum.value) * 100).toFixed(1) : 0; fetchCalculations(); });
+        dpPercentNum.addEventListener('input', () => { dpAmountNum.value = Math.round((dpPercentNum.value / 100) * priceNum.value); dpSlider.value = dpAmountNum.value; fetchCalculations(); });
+        dpSlider.addEventListener('input', () => { dpAmountNum.value = dpSlider.value; dpAmountNum.dispatchEvent(new Event('input')); });
+        ['rate3','rate5','rate7','rateCustom','customYears'].forEach(id => document.getElementById(id).addEventListener('input', fetchCalculations));
+        fetchCalculations();
     </script>
 </body>
 </html>
