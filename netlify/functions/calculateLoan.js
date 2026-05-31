@@ -7,27 +7,26 @@ exports.handler = async (event) => {
     const calc = (r, y) => {
         const interest = rem * y * (r / 100);
         const total = rem + interest;
+        const months = y * 12;
         return {
             fin: fmt(rem),
             int: fmt(interest),
-            mInt: fmt(interest / (y * 12)),
+            mInt: months > 0 ? fmt(interest / months) : 0,
             tot: fmt(total),
-            res: fmt(total / (y * 12))
+            res: months > 0 ? fmt(total / months) : 0
         };
-    };
-
-    const response = {
-        price: fmt(price),
-        dp: fmt(dp),
-        remaining: fmt(rem),
-        3: calc(rates[3], 3),
-        5: calc(rates[5], 5),
-        7: calc(rates[7], 7),
-        Custom: calc(rates.Custom, customYears)
     };
 
     return {
         statusCode: 200,
-        body: JSON.stringify(response)
+        body: JSON.stringify({
+            price: fmt(price),
+            dp: fmt(dp),
+            remaining: fmt(rem),
+            3: calc(rates[3], 3),
+            5: calc(rates[5], 5),
+            7: calc(rates[7], 7),
+            Custom: calc(rates.Custom, customYears)
+        })
     };
 };
